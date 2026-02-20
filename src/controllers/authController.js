@@ -77,3 +77,38 @@ export const logoutUser = async (req, res, next) => {
     });
   }
 };
+
+// Get user profile
+export const getProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Update user profile
+export const updateProfile = async (req, res, next) => {
+  try {
+    const { name, email, phone, address } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (email && email !== user.email) {
+      const exists = await User.findOne({ email });
+      if (exists) return res.status(400).json({ message: "Email already in use" });
+    }
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phone = phone || user.phone;
+    user.address = address || user.address;
+
+    await user.save();
+    res.json({ message: "Profile updated successfully", user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address } });
+  } catch (err) {
+    next(err);
+  }
+};
